@@ -1,0 +1,109 @@
+// Thronely — pay-to-rank leaderboard schema.
+//
+// Portable by design so the SQLite (dev) -> Postgres (prod) swap is a provider
+// change plus a fresh migration:
+//   * `status` is a String, not a Prisma enum, validated in src/lib/pricing.ts.
+//   * no provider-specific column types or native attributes.
+//   * money is stored as integer cents everywhere. Never floats.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  slug     String    @unique
+  name     String
+  products Product[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  url         String
+  title       String
+  // Hard-capped at 160 chars; enforced on write in src/lib/validation.ts.
+  description String
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  logoUrl     String?
+
+  // Cumulative money paid, in cents. Rank is derived from this, never stored.
+  totalPaidCents Int       @default(0)
+  // Tie-break for equal totalPaidCents: earlier lastBidAt wins.
+  lastBidAt      DateTime?
+  hidden         Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+
+  bids   Bid[]
+  clicks Click[]
+
+  // Drives the board query: filter hidden, order by money desc then time asc.
+  @@index([hidden, totalPaidCents, lastBidAt])
+  @@index([categoryId])
+}
+
+model Bid {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  // The amount actually collected. Written from Stripe's amount_total on the
+  // webhook, never from the checkout-time quote, and never modified afterwards —
+  // this keeps Product.totalPaidCents === SUM(paid bids) holding.
+  amountCents Int
+  // Nullable so the Bid row can be created BEFORE the Stripe session exists.
+  // That ordering means money can never land with no row to credit; SQLite and
+  // Postgres both allow multiple NULLs in a unique index.
+  stripeSessionId String? @unique
+  // "pending" | "paid" | "failed" — see BidStatus in src/lib/bids.ts.
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  paidAt      DateTime?
+
+  @@index([status, paidAt])
+  @@index([productId])
+}
+
+model Click {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+  // Salted hash, never the raw IP.
+  ipHash    String?
+  userAgent String?
+  referrer  String?
+
+  @@index([productId, createdAt])
+  @@index([ipHash, createdAt])
+}
+
+// Event-level idempotency gate for the Stripe webhook. The unique constraint on
+// stripeEventId is what makes concurrent duplicate deliveries of the SAME event
+// safe; the Bid status transition below covers duplicate deliveries of
+// different events for the same session.
+//
+// status: "done" | "unmatched" | "ignored" | "needs_review". An "unmatched"
+// event (no Bid for that session) is recorded rather than merely logged, so
+// money that arrives with no row to credit is discoverable instead of lost.
+model ProcessedEvent {
+  id            String   @id @default(cuid())
+  stripeEventId String   @unique
+  type          String
+  status        String   @default("done")
+  detail        String?
+  receivedAt    DateTime @default(now())
+
+  @@index([status])
+}
+
+// Key/value app settings, e.g. the editable prohibited-keyword list.
+model Setting {
+  key   String @id
+  value String
+}

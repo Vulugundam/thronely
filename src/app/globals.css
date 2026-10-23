@@ -1,0 +1,258 @@
+@import "tailwindcss";
+
+/*
+ * Thronely design system — "dark throne room".
+ *
+ * Tailwind v4 is CSS-first: these @theme tokens generate the utilities
+ * (bg-abyss-900, text-gold-400, …). There is deliberately no tailwind.config.js.
+ */
+@theme {
+  /* Near-black architecture, faintly violet rather than neutral grey. */
+  --color-abyss-950: oklch(0.13 0.015 285);
+  --color-abyss-900: oklch(0.17 0.022 285);
+  --color-abyss-800: oklch(0.22 0.028 285);
+  --color-abyss-700: oklch(0.28 0.032 285);
+
+  /* Soft gold — the crown, the top three, every accent that means "value". */
+  --color-gold-300: oklch(0.9 0.09 88);
+  --color-gold-400: oklch(0.84 0.13 85);
+  --color-gold-500: oklch(0.77 0.145 80);
+  --color-gold-600: oklch(0.66 0.13 75);
+
+  /* Electric violet — energy, movement, the live/new-#1 signal. */
+  --color-violet-300: oklch(0.8 0.16 300);
+  --color-violet-400: oklch(0.72 0.2 295);
+  --color-violet-500: oklch(0.62 0.24 295);
+  --color-violet-600: oklch(0.52 0.24 292);
+
+  --color-ivory: oklch(0.97 0.008 90);
+  --color-mist: oklch(0.76 0.015 285);
+  --color-slate-dim: oklch(0.58 0.018 285);
+
+  --font-display: var(--font-cinzel), "Iowan Old Style", Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Layered shadows: a tight contact shadow plus a wide ambient one reads as depth. */
+  --shadow-plinth: 0 1px 0 0 oklch(1 0 0 / 0.06) inset,
+    0 12px 28px -12px oklch(0 0 0 / 0.8);
+  --shadow-lifted: 0 1px 0 0 oklch(1 0 0 / 0.08) inset,
+    0 24px 48px -16px oklch(0 0 0 / 0.85);
+
+  --radius-card: 1rem;
+}
+
+/*
+ * The room itself. A single fixed radial wash behind everything gives the page
+ * a light source (a shaft from above, as in a throne room) without any image.
+ */
+@layer base {
+  html {
+    color-scheme: dark;
+    scrollbar-color: var(--color-abyss-700) transparent;
+  }
+
+  body {
+    background-color: var(--color-abyss-950);
+    background-image:
+      radial-gradient(
+        ellipse 120% 80% at 50% -20%,
+        oklch(0.62 0.24 295 / 0.16),
+        transparent 60%
+      ),
+      radial-gradient(
+        ellipse 80% 60% at 50% 0%,
+        oklch(0.84 0.13 85 / 0.09),
+        transparent 55%
+      );
+    background-attachment: fixed;
+    color: var(--color-ivory);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* A visible, on-brand focus ring — this UI is heavily interactive. */
+  :focus-visible {
+    outline: 2px solid var(--color-gold-400);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: oklch(0.62 0.24 295 / 0.4);
+    color: var(--color-ivory);
+  }
+}
+
+@layer components {
+  /* Glassy translucent card: the base surface for nearly every panel. */
+  .glass {
+    background: linear-gradient(
+      to bottom,
+      oklch(1 0 0 / 0.055),
+      oklch(1 0 0 / 0.02)
+    );
+    backdrop-filter: blur(12px) saturate(1.2);
+    border: 1px solid oklch(1 0 0 / 0.09);
+    box-shadow: var(--shadow-plinth);
+  }
+
+  .glass-strong {
+    background: linear-gradient(
+      to bottom,
+      oklch(1 0 0 / 0.08),
+      oklch(1 0 0 / 0.03)
+    );
+    backdrop-filter: blur(16px) saturate(1.25);
+    border: 1px solid oklch(1 0 0 / 0.12);
+    box-shadow: var(--shadow-lifted);
+  }
+
+  /* Hairline gold rule used to separate board sections. */
+  .rule-gold {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      oklch(0.84 0.13 85 / 0.35),
+      transparent
+    );
+  }
+
+  /* Pressable 3D claim button. */
+  .btn-claim {
+    position: relative;
+    border-radius: 0.75rem;
+    background: linear-gradient(
+      to bottom,
+      var(--color-gold-400),
+      var(--color-gold-600)
+    );
+    color: oklch(0.18 0.03 70);
+    font-weight: 700;
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 0.4) inset,
+      0 4px 0 0 var(--color-gold-600),
+      0 10px 22px -8px oklch(0.84 0.13 85 / 0.5);
+    transform: translateY(0);
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+
+  .btn-claim:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 0.45) inset,
+      0 5px 0 0 var(--color-gold-600),
+      0 16px 30px -8px oklch(0.84 0.13 85 / 0.6);
+  }
+
+  /* Presses down onto its own shadow — the whole point of the 3D feel. */
+  .btn-claim:active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 0.3) inset,
+      0 1px 0 0 var(--color-gold-600),
+      0 4px 10px -6px oklch(0 0 0 / 0.6);
+  }
+
+  .btn-claim:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .btn-ghost {
+    border-radius: 0.75rem;
+    border: 1px solid oklch(1 0 0 / 0.14);
+    background: oklch(1 0 0 / 0.04);
+    color: var(--color-ivory);
+    transition: background 140ms ease, border-color 140ms ease;
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    background: oklch(1 0 0 / 0.08);
+    border-color: oklch(0.84 0.13 85 / 0.4);
+  }
+
+  /* 2.5D tilt-on-hover for board rows. The transform is driven by CSS
+     custom properties that the client component updates from pointer position,
+     so the hover response stays on the compositor. */
+  .tilt {
+    transform: perspective(900px) rotateX(var(--tilt-x, 0deg))
+      rotateY(var(--tilt-y, 0deg)) translateZ(0);
+    transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 200ms ease;
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+
+  .tilt:hover {
+    box-shadow: var(--shadow-lifted);
+  }
+
+  /* Rank numerals get a struck-metal treatment. */
+  .rank-numeral {
+    font-family: var(--font-display);
+    font-weight: 700;
+    background: linear-gradient(
+      to bottom,
+      var(--color-gold-300),
+      var(--color-gold-600)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .rank-numeral-violet {
+    font-family: var(--font-display);
+    font-weight: 700;
+    background: linear-gradient(
+      to bottom,
+      var(--color-violet-300),
+      var(--color-violet-600)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Skeleton shimmer for the 3D loading state. */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      oklch(1 0 0 / 0.04) 25%,
+      oklch(1 0 0 / 0.08) 37%,
+      oklch(1 0 0 / 0.04) 63%
+    );
+    background-size: 400% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0 50%;
+    }
+  }
+}
+
+/*
+ * Motion policy. Everything decorative collapses when the visitor has asked for
+ * reduced motion; the 3D layer additionally falls back to the 2D board.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .tilt {
+    transform: none !important;
+  }
+}
