@@ -10,6 +10,8 @@ import {
   Quaternion,
   Vector3,
   type Group,
+  CylinderGeometry,
+  PlaneGeometry,
 } from "three";
 import { formatUsd } from "@/lib/pricing";
 import { SceneFrame } from "./SceneFrame";
@@ -17,15 +19,8 @@ import { SceneFrame } from "./SceneFrame";
 /**
  * The top twenty as towers, drawn in a single instanced mesh.
  *
- * The reason for instancing is concrete: twenty separate meshes would be twenty
- * draw calls and twenty material uploads per frame. One `InstancedMesh` is a
- * single draw call for all twenty, and the per-bar colour rides in an instance
- * attribute that costs nothing extra to update.
- *
- * Because the instanced bars are not individual scene objects, hit-testing is
- * done arithmetically against the fan layout rather than by raycasting each bar.
- * That is both cheaper and simpler than the alternative — and it is why the bars
- * are laid out on a known arc instead of an arbitrary arrangement.
+ * Layout: 20 bars evenly spaced along X axis, camera front-on.
+ * Height = square-root normalized price with floor.
  */
 
 export type TowerEntry = {
@@ -39,33 +34,79 @@ export type TowerEntry = {
 /** How many listings the tower view shows. */
 export const TOWER_SIZE = 20;
 
-const MIN_HEIGHT = 0.5;
-const MAX_HEIGHT = 5.2;
+const MIN_HEIGHT = 0.4;
+const MAX_HEIGHT = 5.0;
 
-/** Radius of the arc the towers stand on, and the span of that arc. */
-const ARC_RADIUS = 6.6;
-const ARC_SPAN = Math.PI * 1.12;
+/** X-axis layout: 20 bars evenly spaced along X */
+const BAR_WIDTH = 0.5;
+const BAR_SPACING = 0.72;
+const TOTAL_WIDTH = BAR_SPACING * TOWER_SIZE;
 
-const BAR_WIDTH = 0.72;
-const BAR_DEPTH = 0.72;
+/** Premium color palette for tower ranks */
+const RANK_COLORS = [
+  // #1 - Gold
+  {
+    body: new Color("#6a4e08"),
+    top: new Color("#f5c852"),
+    side: new Color("#4a3606"),
+    emissive: new Color("#2d1f04"),
+    accent: "#f5c852",
+    glow: "#ffd700",
+    particleColor: "#ffd700",
+    metalness: 0.92,
+    roughness: 0.18,
+  },
+  // #2 - Silver/Platinum
+  {
+    body: new Color("#323848"),
+    top: new Color("#d8e0f0"),
+    side: new Color("#242838"),
+    emissive: new Color("#141620"),
+    accent: "#c8d0e0",
+    glow: "#a8b8e8",
+    particleColor: "#a8b8e8",
+    metalness: 0.88,
+    roughness: 0.22,
+  },
+  // #3 - Violet/Amethyst
+  {
+    body: new Color("#34204c"),
+    top: new Color("#c094fc"),
+    side: new Color("#241438"),
+    emissive: new Color("#140820"),
+    accent: "#c094fc",
+    glow: "#a077e8",
+    particleColor: "#b88cfa",
+    metalness: 0.82,
+    roughness: 0.26,
+  },
+  // #4+ - Steel/Iron
+  {
+    body: new Color("#343844"),
+    top: new Color("#7a8498"),
+    side: new Color("#242830"),
+    emissive: new Color("#121418"),
+    accent: "#6a7488",
+    glow: "#5a6478",
+    particleColor: "#6a7488",
+    metalness: 0.68,
+    roughness: 0.38,
+  },
+];
 
-/** Colours: gold for #1, silver, violet for third, steel for the rest. */
-const GOLD = new Color("#e8b84b");
-const SILVER = new Color("#b9c3d4");
-const VIOLET = new Color("#a077e8");
-const STEEL = new Color("#4d5670");
 const HIGHLIGHT = new Color("#ffe08a");
 
 function heightFor(cents: number, min: number, max: number): number {
   if (max <= min) return (MIN_HEIGHT + MAX_HEIGHT) / 2;
   const normalised = (cents - min) / (max - min);
-  return MIN_HEIGHT + Math.sqrt(Math.max(0, normalised)) * (MAX_HEIGHT - MIN_HEIGHT);
+  const shaped = Math.sqrt(Math.max(0, normalised));
+  return MIN_HEIGHT + shaped * (MAX_HEIGHT - MIN_HEIGHT);
 }
 
-/** Angle of the tower at `index`, measured around the Y axis. */
-function angleAt(index: number, count: number): number {
+/** X position for bar at index (centered at 0) */
+function xAt(index: number, count: number): number {
   if (count <= 1) return 0;
-  return (index / (count - 1) - 0.5) * ARC_SPAN;
+  return (index - (count - 1) / 2) * BAR_SPACING;
 }
 
 export function TowerScene({
@@ -76,7 +117,7 @@ export function TowerScene({
   animate: boolean;
 }) {
   return (
-    <SceneFrame cameraPosition={[0, 3.2, 8.2]}>
+    <SceneFrame cameraPosition={[0, 3.5, 9]}>
       <TowerContents entries={entries} animate={animate} />
     </SceneFrame>
   );
@@ -91,6 +132,7 @@ function TowerContents({
   animate: boolean;
 }) {
   const meshRef = useRef<InstancedMesh>(null);
+  const capsRef = useRef<InstancedMesh>(null);
   const groupRef = useRef<Group>(null);
 
   const [hovered, setHovered] = useState<number | null>(null);
@@ -107,17 +149,12 @@ function TowerContents({
 
   /**
    * Geometry is built once, then written into instance matrices on every change.
-   *
-   * Matrices are composed rather than set as Euler angles so a tower can be
-   * scaled independently of its position — the height *is* the data here, so it
-   * has to be reproducible exactly, not eyeballed.
    */
   useFrame(() => {
     const mesh = meshRef.current;
-    if (!mesh) return;
+    const caps = capsRef.current;
+    if (!mesh || !caps) return;
 
-    // Scratch objects hoisted out of the loop: allocating a Matrix4 per tower
-    // per frame would hand the garbage collector 1,200 objects a second.
     const matrix = new Matrix4();
     const position = new Vector3();
     const scale = new Vector3();
@@ -125,111 +162,209 @@ function TowerContents({
     const colour = new Color();
 
     towers.forEach((tower, index) => {
-      const angle = angleAt(index, towers.length);
       const height = heightFor(tower.totalPaidCents, moneyRange.min, moneyRange.max);
+      const x = xAt(index, towers.length);
 
-      position.set(
-        Math.sin(angle) * ARC_RADIUS,
-        height / 2,
-        Math.cos(angle) * ARC_RADIUS - ARC_RADIUS,
-      );
-      // The base geometry is one unit tall, so scaling Y *is* the height.
+      position.set(x, height / 2, 0);
       scale.set(1, height, 1);
-
       matrix.compose(position, rotation, scale);
       mesh.setMatrixAt(index, matrix);
 
-      colour.copy(
-        index === 0
-          ? GOLD
-          : index === 1
-            ? SILVER
-            : index === 2
-              ? VIOLET
-              : STEEL,
-      );
-      if (hovered === index) colour.lerp(HIGHLIGHT, 0.55);
+      // Cap position
+      position.y = height + 0.025;
+      scale.set(1.08, 0.05, 1.08);
+      matrix.compose(position, rotation, scale);
+      caps.setMatrixAt(index, matrix);
+
+      // Color based on rank
+      const rankColors = index < 3 ? RANK_COLORS[index] : RANK_COLORS[3];
+      colour.copy(rankColors.top);
+      if (hovered === index) colour.lerp(HIGHLIGHT, 0.5);
       mesh.setColorAt(index, colour);
+      caps.setColorAt(index, colour);
     });
 
     mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.instanceColor!.needsUpdate = true;
+    caps.instanceMatrix.needsUpdate = true;
+    caps.instanceColor!.needsUpdate = true;
   });
 
-  /**
-   * Idle rotation, applied to the whole group.
-   *
-   * Rotating the parent is what makes this cheap: the instance matrices never
-   * change, so the loop only touches one transform instead of twenty.
-   */
-  useFrame((state, delta) => {
-    if (!animate || !groupRef.current) return;
-    groupRef.current.rotation.y += delta * 0.075;
-
-    // A slow breath in elevation so the arc is legible as 3D from the front.
-    groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.4) * 0.06;
-  });
+  // No idle rotation - bars stay upright and readable
 
   if (towers.length === 0) return null;
 
   return (
     <group ref={groupRef}>
+      {/* Main tower bodies - instanced for performance */}
       <instancedMesh
         ref={meshRef}
         args={[undefined, undefined, towers.length]}
         onPointerMove={(event) => {
-          // `instanceId` is provided by the instanced raycast; anything else
-          // means the pointer is over empty space.
           event.stopPropagation();
           setHovered(typeof event.instanceId === "number" ? event.instanceId : null);
         }}
         onPointerOut={() => setHovered(null)}
+        castShadow
+        receiveShadow
       >
-        <boxGeometry args={[BAR_WIDTH, 1, BAR_DEPTH]} />
-        <meshStandardMaterial
-          metalness={0.62}
-          roughness={0.34}
-          emissive="#221a33"
-          emissiveIntensity={0.4}
+        <cylinderGeometry args={[BAR_WIDTH * 0.5, BAR_WIDTH * 0.5, 1, 10, 1, false, 0, Math.PI * 2]} />
+        <meshPhysicalMaterial
+          metalness={0.8}
+          roughness={0.24}
+          clearcoat={0.5}
+          clearcoatRoughness={0.12}
+          emissive="#120e1e"
+          emissiveIntensity={0.6}
+          vertexColors
+          reflectivity={0.85}
         />
       </instancedMesh>
 
-      {/* One billboard for the hovered tower only — twenty at once would be noise. */}
-      {hovered !== null && towers[hovered] && (
+      {/* Tower caps - separate instanced mesh for distinct material */}
+      <instancedMesh
+        ref={capsRef}
+        args={[undefined, undefined, towers.length]}
+      >
+        <cylinderGeometry args={[BAR_WIDTH * 0.53, BAR_WIDTH * 0.53, 0.05, 10, 1, true, 0, Math.PI * 2]} />
+        <meshPhysicalMaterial
+          metalness={0.98}
+          roughness={0.06}
+          clearcoat={1.0}
+          clearcoatRoughness={0.02}
+          emissiveIntensity={1.2}
+          vertexColors
+        />
+      </instancedMesh>
+
+      {/* Rank labels on ALL towers - visible billboards */}
+      {towers.map((tower, index) => (
         <SceneBillboard
+          key={tower.id}
           position={[
-            Math.sin(angleAt(hovered, towers.length)) * ARC_RADIUS,
-            heightFor(
-              towers[hovered].totalPaidCents,
-              moneyRange.min,
-              moneyRange.max,
-            ) + 0.55,
-            Math.cos(angleAt(hovered, towers.length)) * ARC_RADIUS - ARC_RADIUS,
+            xAt(index, towers.length),
+            heightFor(tower.totalPaidCents, moneyRange.min, moneyRange.max) + 0.5,
+            0,
           ]}
           center
-          distanceFactor={12}
+          distanceFactor={14}
           style={{ pointerEvents: "none" }}
           zIndexRange={[10, 0]}
         >
-          <div className="w-52 rounded-lg border border-gold-400/30 bg-abyss-950/92 px-3 py-2 text-center shadow-lg backdrop-blur">
-            <p className="font-display text-sm font-bold text-ivory">
-              #{hovered + 1} · {towers[hovered].title}
-            </p>
-            <p className="mt-0.5 text-xs text-mist">
-              {towers[hovered].categoryName}
-            </p>
-            <p className="mt-1 font-display text-base font-bold text-gold-400 tabular-nums">
-              {formatUsd(towers[hovered].totalPaidCents)}
-            </p>
+          <div className={`w-36 text-center select-none ${index === hovered ? 'scale-110' : ''}`}>
+            <span
+              className={`font-display text-base font-bold leading-none tabular-nums ${
+                index === 0 ? 'text-gold-400' : index === 1 ? 'text-white' : index === 2 ? 'text-violet-400' : 'text-slate-400'
+              }`}
+              style={{
+                textShadow: `
+                  0 0 8px rgba(0,0,0,0.9),
+                  0 2px 8px rgba(0,0,0,0.8)
+                `,
+              }}
+            >
+              #{index + 1}
+            </span>
+            {index === hovered && (
+              <>
+                <p className="mt-0.5 truncate text-[0.7rem] font-semibold text-ivory">
+                  {tower.title}
+                </p>
+                <p className="text-[0.65rem] font-semibold text-gold-400 tabular-nums">
+                  {formatUsd(tower.totalPaidCents)}
+                </p>
+              </>
+            )}
           </div>
         </SceneBillboard>
-      )}
+      ))}
 
-      {/* The floor the towers rise from. */}
-      <mesh position={[0, -0.06, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[ARC_RADIUS + 2.4, 48]} />
-        <meshStandardMaterial color="#12101c" metalness={0.4} roughness={0.75} />
+      {/* The floor the towers rise from - premium dark surface with reflection */}
+      <mesh position={[0, -0.1, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[TOTAL_WIDTH + 2, 6]} />
+        <meshPhysicalMaterial
+          color="#06050a"
+          metalness={0.55}
+          roughness={0.4}
+          clearcoat={0.3}
+          clearcoatRoughness={0.25}
+          reflectivity={0.45}
+        />
       </mesh>
+
+      {/* Subtle base line under bars */}
+      <mesh position={[0, -0.09, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[TOTAL_WIDTH * 0.9, 0.4]} />
+        <meshBasicMaterial
+          color="#3d2f08"
+          transparent
+          opacity={0.06}
+          depthWrite={false}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+/** Ambient particles - reduced count, X-axis layout */
+function TowerParticles({
+  towers,
+  moneyRange,
+}: {
+  towers: TowerEntry[];
+  moneyRange: { min: number; max: number };
+}) {
+  const [particles] = useState(() => {
+    const arr = [];
+    for (let i = 0; i < 15; i++) {
+      const towerIndex = Math.floor(Math.random() * towers.length);
+      const height = heightFor(towers[towerIndex].totalPaidCents, moneyRange.min, moneyRange.max);
+      const rankColors = towerIndex < 3 ? RANK_COLORS[towerIndex] : RANK_COLORS[3];
+      const x = xAt(towerIndex, towers.length);
+
+      arr.push({
+        x: x + (Math.random() - 0.5) * BAR_SPACING * 0.5,
+        y: Math.random() * height * 0.85,
+        z: (Math.random() - 0.5) * 1.5,
+        speed: 0.08 + Math.random() * 0.12,
+        phase: Math.random() * Math.PI * 2,
+        size: 0.008 + Math.random() * 0.025,
+        color: rankColors.particleColor,
+        opacity: 0.08 + Math.random() * 0.12,
+      });
+    }
+    return arr;
+  });
+
+  const elapsed = useRef(0);
+
+  useFrame((_, delta) => {
+    elapsed.current += delta;
+  });
+
+  return (
+    <group>
+      {particles.map((p, i) => (
+        <mesh
+          key={i}
+          position={[
+            p.x + Math.sin(elapsed.current * p.speed + p.phase) * 0.2,
+            p.y + Math.cos(elapsed.current * p.speed * 0.6 + p.phase) * 0.1,
+            p.z + Math.sin(elapsed.current * p.speed + p.phase) * 0.15,
+          ]}
+          scale={p.size * (1 + Math.sin(elapsed.current * 1.5 + p.phase) * 0.4)}
+          rotation={[elapsed.current * 0.1, elapsed.current * 0.15, 0]}
+        >
+          <icosahedronGeometry args={[1, 0]} />
+          <meshBasicMaterial
+            color={p.color}
+            transparent
+            opacity={p.opacity}
+            blending={2}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
     </group>
   );
 }

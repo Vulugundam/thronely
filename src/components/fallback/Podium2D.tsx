@@ -31,9 +31,12 @@ export function Podium2D({
     return 38 + ratio * 62;
   };
 
+  /** Matches the 3D podium's height so promoting to 3D does not shift the page. */
+  const PODIUM_HEIGHT = "clamp(320px, 42vw, 440px)";
+
   return (
-    <div className="relative">
-      <ol className="flex items-end justify-center gap-3 sm:gap-6">
+    <div style={{ height: PODIUM_HEIGHT }} className="w-full">
+      <div className="flex items-end justify-center gap-3 sm:gap-6 h-full">
         {order.map((index) => {
           const row = rows[index];
           if (!row) {
@@ -99,7 +102,7 @@ export function Podium2D({
             </li>
           );
         })}
-      </ol>
+      </div>
 
       {/* Plinth, so the blocks stand on something. */}
       <div className="rule-gold" />

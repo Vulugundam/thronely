@@ -9,6 +9,9 @@ export type TowerRow = {
   categoryName: string;
 };
 
+/** Matches the 3D tower's height so promoting to 3D does not shift the page. */
+const TOWER_HEIGHT = "clamp(360px, 48vw, 520px)";
+
 /**
  * The tower view in 2D: the top twenty as vertical bars.
  *
@@ -35,11 +38,11 @@ export function Tower2D({ entries }: { entries: TowerRow[] }) {
   };
 
   return (
-    <div>
+    <div style={{ height: TOWER_HEIGHT }} className="w-full">
       {/* The bars: a quick visual read of the shape of the top twenty. */}
       <div
         aria-hidden="true"
-        className="flex h-48 items-end justify-center gap-1.5 sm:h-60 sm:gap-2"
+        className="flex h-full items-end justify-center gap-1.5 sm:gap-2"
       >
         {entries.map((entry, index) => (
           <div
