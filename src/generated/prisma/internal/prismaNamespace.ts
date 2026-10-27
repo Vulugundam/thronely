@@ -401,6 +401,8 @@ export const ModelName = {
   Product: 'Product',
   Bid: 'Bid',
   Click: 'Click',
+  Claim: 'Claim',
+  Subscription: 'Subscription',
   ProcessedEvent: 'ProcessedEvent',
   Setting: 'Setting'
 } as const
@@ -418,7 +420,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "category" | "product" | "bid" | "click" | "processedEvent" | "setting"
+    modelProps: "category" | "product" | "bid" | "click" | "claim" | "subscription" | "processedEvent" | "setting"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -718,6 +720,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Claim: {
+      payload: Prisma.$ClaimPayload<ExtArgs>
+      fields: Prisma.ClaimFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ClaimFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ClaimFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPayload>
+        }
+        findFirst: {
+          args: Prisma.ClaimFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ClaimFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPayload>
+        }
+        findMany: {
+          args: Prisma.ClaimFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPayload>[]
+        }
+        create: {
+          args: Prisma.ClaimCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPayload>
+        }
+        createMany: {
+          args: Prisma.ClaimCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ClaimCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPayload>[]
+        }
+        delete: {
+          args: Prisma.ClaimDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPayload>
+        }
+        update: {
+          args: Prisma.ClaimUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPayload>
+        }
+        deleteMany: {
+          args: Prisma.ClaimDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ClaimUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ClaimUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPayload>[]
+        }
+        upsert: {
+          args: Prisma.ClaimUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ClaimPayload>
+        }
+        aggregate: {
+          args: Prisma.ClaimAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateClaim>
+        }
+        groupBy: {
+          args: Prisma.ClaimGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ClaimGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ClaimCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ClaimCountAggregateOutputType> | number
+        }
+      }
+    }
+    Subscription: {
+      payload: Prisma.$SubscriptionPayload<ExtArgs>
+      fields: Prisma.SubscriptionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SubscriptionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SubscriptionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPayload>
+        }
+        findFirst: {
+          args: Prisma.SubscriptionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SubscriptionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPayload>
+        }
+        findMany: {
+          args: Prisma.SubscriptionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPayload>[]
+        }
+        create: {
+          args: Prisma.SubscriptionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPayload>
+        }
+        createMany: {
+          args: Prisma.SubscriptionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SubscriptionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPayload>[]
+        }
+        delete: {
+          args: Prisma.SubscriptionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPayload>
+        }
+        update: {
+          args: Prisma.SubscriptionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPayload>
+        }
+        deleteMany: {
+          args: Prisma.SubscriptionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SubscriptionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SubscriptionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPayload>[]
+        }
+        upsert: {
+          args: Prisma.SubscriptionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPayload>
+        }
+        aggregate: {
+          args: Prisma.SubscriptionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSubscription>
+        }
+        groupBy: {
+          args: Prisma.SubscriptionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SubscriptionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SubscriptionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SubscriptionCountAggregateOutputType> | number
+        }
+      }
+    }
     ProcessedEvent: {
       payload: Prisma.$ProcessedEventPayload<ExtArgs>
       fields: Prisma.ProcessedEventFieldRefs
@@ -922,7 +1072,9 @@ export const ProductScalarFieldEnum = {
   totalPaidCents: 'totalPaidCents',
   lastBidAt: 'lastBidAt',
   hidden: 'hidden',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  paddleProductId: 'paddleProductId',
+  paddlePriceId: 'paddlePriceId'
 } as const
 
 export type ProductScalarFieldEnum = (typeof ProductScalarFieldEnum)[keyof typeof ProductScalarFieldEnum]
@@ -951,6 +1103,35 @@ export const ClickScalarFieldEnum = {
 } as const
 
 export type ClickScalarFieldEnum = (typeof ClickScalarFieldEnum)[keyof typeof ClickScalarFieldEnum]
+
+
+export const ClaimScalarFieldEnum = {
+  id: 'id',
+  productId: 'productId',
+  claimantEmail: 'claimantEmail',
+  amountCents: 'amountCents',
+  status: 'status',
+  paddleTransactionId: 'paddleTransactionId',
+  createdAt: 'createdAt',
+  paidAt: 'paidAt'
+} as const
+
+export type ClaimScalarFieldEnum = (typeof ClaimScalarFieldEnum)[keyof typeof ClaimScalarFieldEnum]
+
+
+export const SubscriptionScalarFieldEnum = {
+  id: 'id',
+  paddleSubscriptionId: 'paddleSubscriptionId',
+  status: 'status',
+  paddleCustomerId: 'paddleCustomerId',
+  paddlePriceId: 'paddlePriceId',
+  currentPeriodEnd: 'currentPeriodEnd',
+  cancelledAt: 'cancelledAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SubscriptionScalarFieldEnum = (typeof SubscriptionScalarFieldEnum)[keyof typeof SubscriptionScalarFieldEnum]
 
 
 export const ProcessedEventScalarFieldEnum = {
@@ -1184,6 +1365,8 @@ export type GlobalOmitConfig = {
   product?: Prisma.ProductOmit
   bid?: Prisma.BidOmit
   click?: Prisma.ClickOmit
+  claim?: Prisma.ClaimOmit
+  subscription?: Prisma.SubscriptionOmit
   processedEvent?: Prisma.ProcessedEventOmit
   setting?: Prisma.SettingOmit
 }

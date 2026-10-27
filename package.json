@@ -15,6 +15,7 @@
     "db:reset": "prisma migrate reset --force"
   },
   "dependencies": {
+    "@paddle/paddle-node-sdk": "^3.10.0",
     "@prisma/adapter-better-sqlite3": "^7.10.1",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
@@ -33,6 +34,7 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",

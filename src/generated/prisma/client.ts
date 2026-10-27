@@ -62,6 +62,16 @@ export type Bid = Prisma.BidModel
  */
 export type Click = Prisma.ClickModel
 /**
+ * Model Claim
+ * 
+ */
+export type Claim = Prisma.ClaimModel
+/**
+ * Model Subscription
+ * 
+ */
+export type Subscription = Prisma.SubscriptionModel
+/**
  * Model ProcessedEvent
  * 
  */

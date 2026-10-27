@@ -55,6 +55,8 @@ export const ModelName = {
   Product: 'Product',
   Bid: 'Bid',
   Click: 'Click',
+  Claim: 'Claim',
+  Subscription: 'Subscription',
   ProcessedEvent: 'ProcessedEvent',
   Setting: 'Setting'
 } as const
@@ -92,7 +94,9 @@ export const ProductScalarFieldEnum = {
   totalPaidCents: 'totalPaidCents',
   lastBidAt: 'lastBidAt',
   hidden: 'hidden',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  paddleProductId: 'paddleProductId',
+  paddlePriceId: 'paddlePriceId'
 } as const
 
 export type ProductScalarFieldEnum = (typeof ProductScalarFieldEnum)[keyof typeof ProductScalarFieldEnum]
@@ -121,6 +125,35 @@ export const ClickScalarFieldEnum = {
 } as const
 
 export type ClickScalarFieldEnum = (typeof ClickScalarFieldEnum)[keyof typeof ClickScalarFieldEnum]
+
+
+export const ClaimScalarFieldEnum = {
+  id: 'id',
+  productId: 'productId',
+  claimantEmail: 'claimantEmail',
+  amountCents: 'amountCents',
+  status: 'status',
+  paddleTransactionId: 'paddleTransactionId',
+  createdAt: 'createdAt',
+  paidAt: 'paidAt'
+} as const
+
+export type ClaimScalarFieldEnum = (typeof ClaimScalarFieldEnum)[keyof typeof ClaimScalarFieldEnum]
+
+
+export const SubscriptionScalarFieldEnum = {
+  id: 'id',
+  paddleSubscriptionId: 'paddleSubscriptionId',
+  status: 'status',
+  paddleCustomerId: 'paddleCustomerId',
+  paddlePriceId: 'paddlePriceId',
+  currentPeriodEnd: 'currentPeriodEnd',
+  cancelledAt: 'cancelledAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SubscriptionScalarFieldEnum = (typeof SubscriptionScalarFieldEnum)[keyof typeof SubscriptionScalarFieldEnum]
 
 
 export const ProcessedEventScalarFieldEnum = {
