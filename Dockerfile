@@ -5,8 +5,8 @@
 FROM node:20-alpine AS base
 WORKDIR /app
 
-# Install dependencies for Prisma and sharp
-RUN apk add --no-cache openssl libc6-compat
+# Install dependencies for Prisma, sharp, and native modules (better-sqlite3)
+RUN apk add --no-cache openssl libc6-compat python3 make g++
 
 # ---- Dependencies stage ----
 FROM base AS deps
