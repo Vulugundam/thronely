@@ -8,6 +8,10 @@ WORKDIR /app
 # Install dependencies for Prisma, sharp, and native modules (better-sqlite3)
 RUN apk add --no-cache openssl libc6-compat python3 make g++
 
+# Build-time DATABASE_URL for Prisma generate / build
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
+
 # ---- Dependencies stage ----
 FROM base AS deps
 COPY package.json package-lock.json ./
